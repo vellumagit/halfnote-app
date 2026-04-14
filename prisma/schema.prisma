@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?
+  dateOfBirth DateTime?
+  intakeNotes String?
+  tags        String   @default("new")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions       Session[]
+  invoices       Invoice[]
+  calendarEvents CalendarEvent[]
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  clientId        String
+  date            DateTime
+  duration        Int      @default(60)
+  type            String   @default("google-meet")
+  googleMeetLink  String?
+  status          String   @default("scheduled")
+  notes           String?
+  transcript      String?
+  summary         String?
+  followUpActions String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  invoices       Invoice[]
+  calendarEvents CalendarEvent[]
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  clientId      String
+  sessionId     String?
+  amount        Float
+  currency      String   @default("CAD")
+  status        String   @default("draft")
+  issuedDate    DateTime @default(now())
+  dueDate       DateTime
+  paidDate      DateTime?
+  notes         String?
+  invoiceNumber String   @unique
+  createdAt     DateTime @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+model CalendarEvent {
+  id             String   @id @default(cuid())
+  clientId       String?
+  sessionId      String?
+  title          String
+  description    String?
+  startTime      DateTime
+  endTime        DateTime
+  googleMeetLink String?
+  color          String?
+  createdAt      DateTime @default(now())
+
+  client  Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+model Settings {
+  id               String @id @default("default")
+  businessName     String @default("Halfnote Healing")
+  practitionerName String @default("")
+  email            String @default("")
+  phone            String @default("")
+  address          String @default("")
+  defaultDuration  Int    @default(60)
+  defaultType      String @default("google-meet")
+  defaultRate      Float  @default(150.0)
+  paymentTerms     String @default("Payment due within 14 days of invoice date.")
+  paymentDetails   String @default("")
+}
